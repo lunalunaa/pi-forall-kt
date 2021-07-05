@@ -13,6 +13,8 @@ repositories {
 }
 
 dependencies {
+    val arrowVersion = "0.13.2"
+    implementation("io.arrow-kt:arrow-core:$arrowVersion")
     testImplementation(kotlin("test"))
 }
 
@@ -20,7 +22,7 @@ tasks.test {
     useJUnitPlatform()
 }
 
-tasks.withType<KotlinCompile>() {
+tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "16"
 }
 

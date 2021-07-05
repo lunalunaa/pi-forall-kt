@@ -1,9 +1,11 @@
 package org.luna.piforall.core
 
-import org.luna.piforall.util.prepend
 import org.luna.piforall.core.TypeCheckError.*
+import org.luna.piforall.util.prepend
 
 typealias Types = List<Pair<Name, VType>>
+
+// TODO: use mutable map?
 
 data class Context(
     val env: Env,
@@ -11,12 +13,12 @@ data class Context(
     val lvl: Lvl
 ) {
 
-    fun bind(name: Name, ty: () -> VType): Context {
-        return Context(env.prepend(Value.VVar(lvl)), types + (name to ty()), lvl + 1)
+    fun bind(name: Name, ty: Lazy<VType>): Context {
+        return Context(env.prepend(Value.VVar(lvl)), types.prepend(name to ty.value), lvl + 1)
     }
 
-    fun define(name: Name, v: () -> Value, ty: () -> VType): Context {
-        return Context(env.prepend(v()), types + (name to ty()), (lvl + 1))
+    fun define(name: Name, v: Lazy<Value>, ty: Lazy<VType>): Context {
+        return Context(env.prepend(v.value), types.prepend(name to ty.value), (lvl + 1))
     }
 
     companion object Factory {
@@ -26,22 +28,25 @@ data class Context(
     }
 }
 
-// TODO: use mutable map?
 
 class Elaborator {
 
     @Throws(TypeCheckError::class)
     fun checkTy(ctx: Context, ct: CTerm, expected: VType): Term {
-        if (ct is CTerm.CLam && expected is Value.VPi) {
-            val tm = checkTy(ctx.bind(ct.name, expected.dom), ct.body, expected.codom.applyTo { Value.VVar(ctx.lvl) })
-            return Term.Lam(ct.name, tm)
+        return if (ct is CTerm.CLam && expected is Value.VPi) {
+            val tm =
+                checkTy(
+                    ctx.bind(ct.binder, expected.dom),
+                    ct.body,
+                    expected.codom.applyTo(lazy { Value.VVar(ctx.lvl) })
+                )
+            Term.Lam(ct.binder, tm)
         } else {
             val (tm, inferred) = inferTy(ctx, ct)
-            return if (checkConv(ctx.lvl, expected, inferred)) tm else throw TypeMismatch(expected, inferred)
+            if (checkConv(ctx.lvl, expected, inferred)) tm else throw TypeMismatch(expected, inferred)
         }
     }
 
-    // TODO: Double check non-strict semantics
     @Throws(TypeCheckError::class)
     fun inferTy(ctx: Context, ct: CTerm): Pair<Term, VType> = when (ct) {
         is CTerm.CVar -> ctx.types.run {
@@ -51,8 +56,8 @@ class Elaborator {
         is CTerm.CApp -> {
             val (tm1, inferred) = inferTy(ctx, ct.tm1)
             if (inferred is Value.VPi) {
-                val tm2 = checkTy(ctx, ct.tm2, inferred.dom())
-                Pair(Term.App(tm1, tm2), inferred.codom.applyTo { Normalizer(ctx.env).eval(tm2) })
+                val tm2 = checkTy(ctx, ct.tm2, inferred.dom.value)
+                Pair(Term.App(tm1, tm2), inferred.codom.applyTo(lazy { Normalizer(ctx.env).eval(tm2) }))
             } else {
                 throw ExpectedFunType(inferred)
             }
@@ -60,9 +65,35 @@ class Elaborator {
         is CTerm.CLam -> throw CannotInferLambda
         is CTerm.CPi -> {
             val dom = checkTy(ctx, ct.dom, Value.VUniv)
-            val codom = checkTy(ctx.bind(ct.binder) { Normalizer(ctx.env).eval(dom) }, ct.codom, Value.VUniv)
+            val codom = checkTy(ctx.bind(ct.binder, lazy { Normalizer(ctx.env).eval(dom) }), ct.codom, Value.VUniv)
             Pair(Term.Pi(ct.binder, dom, codom), Value.VUniv)
         }
         is CTerm.CUniv -> Pair(Term.Univ, Value.VUniv)
+    }
+
+    /**
+     * Check type without context
+     */
+
+    @Throws(TypeCheckError::class)
+    fun checkTy(ct: CTerm, expected: VType): Term = checkTy(Context.emptyCxt(), ct, expected)
+
+    /**
+     * Infer type without context
+     */
+    @Throws(TypeCheckError::class)
+    fun inferTy(ct: CTerm): Pair<Term, VType> = inferTy(Context.emptyCxt(), ct)
+}
+
+// TODO: make a DSL builder?
+fun main() {
+    val ct = CTerm.CPi("A", CTerm.CUniv, CTerm.CPi("_", CTerm.CVar("A"), CTerm.CVar("A")))
+    val tm = CTerm.CLam("A", CTerm.CLam("x", CTerm.CVar("x")))
+    val ty = Elaborator().checkTy(Context.emptyCxt(), ct, Value.VUniv)
+
+    try {
+        Normalizer.normalize(Elaborator().checkTy(tm, Normalizer.eval(ty)))
+    } catch (e: TypeCheckError) {
+        e.report()
     }
 }
