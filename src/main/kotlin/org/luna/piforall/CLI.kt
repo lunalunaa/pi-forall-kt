@@ -17,7 +17,7 @@ object CLI {
             null
         }
 
-    fun checkAndNormalize(tm: CTerm, ct: CType): Term? {
+    private fun checkAndNormalize(tm: CTerm, ct: CType): Term? {
         val tmElaborated = typeCheck(tm, ct)
         return if (tmElaborated != null) {
             Normalizer.normalize(tmElaborated)
@@ -28,7 +28,7 @@ object CLI {
 
     private tailrec fun readInput(): String = readLine() ?: readInput()
     private tailrec fun readAndParse(): CTerm = parse(readInput()) ?: readAndParse()
-    fun printPrompt(): Unit = print(prompt)
+    private fun printPrompt(): Unit = print(prompt)
 
     fun REPL() {
         while (true) {
