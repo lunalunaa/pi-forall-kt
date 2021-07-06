@@ -6,7 +6,7 @@ data class Normalizer(val env: Env) {
     constructor() : this(emptyList())
 
     fun eval(tm: Term): Value = when (tm) {
-        is Term.Var -> env[tm.idx]
+        is Term.Var -> env[tm.idx]  // indices -- the top of the environment stack
         is Term.App -> {
             val v1 = eval(tm.t1)
             val v2 = eval(tm.t2)
@@ -15,17 +15,17 @@ data class Normalizer(val env: Env) {
                 else -> Value.VApp(v1, lazy { v2 })
             }
         }
-        is Term.Lam -> Value.VLam(tm.name, Value.Closure(env, tm.body))
+        is Term.Lam -> Value.VLam(tm.binder, Value.Closure(env, tm.body))
         is Term.Pi -> Value.VPi(tm.binder, lazy { eval(tm.dom) }, Value.Closure(env, tm.codom))
         is Term.Univ -> Value.VUniv
     }
 
-    private fun lvl2Ix(varLvl: Lvl, totalLvl: Lvl): Ix = totalLvl - varLvl - 1
+    private fun lvl2Ix(totalLvl: Lvl, varLvl: Lvl): Ix = totalLvl - varLvl - 1
 
     private fun quote(lvl: Lvl, v: Value): Term = when (v) {
-        is Value.VVar -> Term.Var(lvl2Ix(lvl, v.lvl))
+        is Value.VVar -> Term.Var(lvl2Ix(lvl, v.lvl))   // levels -- convert it back
         is Value.VApp -> Term.App(quote(lvl, v.v1), quote(lvl, v.v2.value))
-        is Value.VLam -> Term.Lam(v.name, quote(lvl + 1, v.body.applyTo(lazy { Value.VVar(lvl) })))
+        is Value.VLam -> Term.Lam(v.binder, quote(lvl + 1, v.body.applyTo(lazy { Value.VVar(lvl) })))
         is Value.VPi -> Term.Pi(
             v.binder,
             quote(lvl, v.dom.value),

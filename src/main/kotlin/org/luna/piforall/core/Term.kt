@@ -15,7 +15,7 @@ Terms
  */
 sealed class Term {
     data class Var(val idx: Ix) : Term()
-    data class Lam(val name: Name, val body: Term) : Term()
+    data class Lam(val binder: Name, val body: Term) : Term()
     data class App(val t1: Term, val t2: Term) : Term()
     data class Pi(val binder: Name, val dom: Type, val codom: Type) : Term()
     object Univ : Term()
@@ -27,7 +27,7 @@ sealed class Term {
  */
 sealed class Value {
     data class VVar(val lvl: Lvl) : Value()
-    data class VLam(val name: Name, val body: Closure) : Value()
+    data class VLam(val binder: Name, val body: Closure) : Value()
     data class VApp(val v1: Value, val v2: Lazy<Value>) : Value()
     data class VPi(val binder: Name, val dom: Lazy<VType>, val codom: Closure) : Value()
     object VUniv : Value()

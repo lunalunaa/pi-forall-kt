@@ -1,6 +1,7 @@
 package org.luna.piforall
 
 import org.luna.piforall.core.*
+import org.luna.piforall.core.CTerm.*
 
 object CLI {
 
@@ -13,7 +14,7 @@ object CLI {
             val tyElaborated = elaborator.checkTy(ty, Value.VUniv)
             elaborator.checkTy(tm, Normalizer.eval(tyElaborated))
         } catch (e: TypeCheckError) {
-            e.report()
+            println(e.report())
             null
         }
 
@@ -41,8 +42,46 @@ object CLI {
             }
         }
     }
+
+    fun test1() {
+        val idType = CTerm.CPi("A", CTerm.CUniv, CTerm.CPi("_", CTerm.CVar("A"), CTerm.CVar("A")))
+        val idLam = CTerm.CLam("A", CTerm.CLam("x", CTerm.CVar("x")))
+        val constType = CTerm.CPi(
+            "A", CTerm.CUniv,
+            CTerm.CPi(
+                "B", CTerm.CUniv,
+                CTerm.CPi(
+                    "_1", CTerm.CVar("A"),
+                    CTerm.CPi("_2", CTerm.CVar("B"), CTerm.CVar("A"))
+                )
+            )
+        )
+
+
+        val constLam = CLam("A", CLam("B", CLam("x", CLam("y", CVar("x")))))
+        val idAppConst = CApp(idLam, constLam)
+
+
+        val notidType = CTerm.CPi("A", CTerm.CUniv, CTerm.CPi("_", CTerm.CVar("A"), CUniv))
+        val notidLam = CTerm.CLam("A", CTerm.CLam("x", CTerm.CVar("A")))
+
+        println("this is not id")
+        val typeCheckedNotID = typeCheck(notidLam, notidType)
+        println(typeCheckedNotID)
+        println(Normalizer.normalize(typeCheckedNotID!!))
+
+        //println("this is id")
+        //println(typeCheck(idLam, idType))
+        //println(Normalizer.eval(typeCheck(idLam, idType)!!))
+
+        //println("this is const")
+        //println(typeCheck(constLam, constType))
+        //println(Normalizer.normalize(typeCheck(constLam, constType)!!))
+    }
 }
 
 fun main() {
-    CLI.REPL()
+    //CLI.REPL()
+
+    CLI.test1()
 }

@@ -10,7 +10,7 @@ sealed class TypeCheckError : Exception() {
     }
 
     // TODO: write toString function for these terms
-    data class VarOutScope(val v: CTerm.CVar) : TypeCheckError() {
+    data class VarOutOfScope(val v: CTerm.CVar) : TypeCheckError() {
         override fun report(): String = "Variable $v out of scope"
     }
 

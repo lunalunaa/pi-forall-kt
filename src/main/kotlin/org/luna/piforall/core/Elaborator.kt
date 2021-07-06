@@ -51,7 +51,7 @@ class Elaborator {
     fun inferTy(ctx: Context, ct: CTerm): Pair<Term, VType> = when (ct) {
         is CTerm.CVar -> ctx.types.run {
             val idx = indexOfFirst { (name, _) -> name == ct.name }
-            return if (idx != -1) Pair(Term.Var(idx), get(idx).second) else throw VarOutScope(ct)
+            return if (idx != -1) Pair(Term.Var(idx), get(idx).second) else throw VarOutOfScope(ct)
         }
         is CTerm.CApp -> {
             val (tm1, inferred) = inferTy(ctx, ct.tm1)
@@ -74,7 +74,6 @@ class Elaborator {
     /**
      * Check type without context
      */
-
     @Throws(TypeCheckError::class)
     fun checkTy(ct: CTerm, expected: VType): Term = checkTy(Context.emptyCxt(), ct, expected)
 
@@ -83,17 +82,22 @@ class Elaborator {
      */
     @Throws(TypeCheckError::class)
     fun inferTy(ct: CTerm): Pair<Term, VType> = inferTy(Context.emptyCxt(), ct)
+
 }
 
-// TODO: make a DSL builder?
-fun main() {
-    val ct = CTerm.CPi("A", CTerm.CUniv, CTerm.CPi("_", CTerm.CVar("A"), CTerm.CVar("A")))
-    val tm = CTerm.CLam("A", CTerm.CLam("x", CTerm.CVar("x")))
-    val ty = Elaborator().checkTy(Context.emptyCxt(), ct, Value.VUniv)
+data class Decl(val sig: CType, val def: CTerm)
+typealias Module = List<Decl>
+typealias Tele = List<Decl>
 
-    try {
-        Normalizer.normalize(Elaborator().checkTy(tm, Normalizer.eval(ty)))
-    } catch (e: TypeCheckError) {
-        e.report()
-    }
+fun main() {
+    //val ct = CTerm.CPi("A", CTerm.CUniv, CTerm.CPi("_", CTerm.CVar("A"), CTerm.CVar("A")))
+    //val tm = CTerm.CLam("A", CTerm.CLam("x", CTerm.CVar("x")))
+    //val ty = Elaborator().checkTy(Context.emptyCxt(), ct, Value.VUniv)
+
+
+    //try {
+    //    Normalizer.normalize(Elaborator().checkTy(tm, Normalizer.eval(ty)))
+    //} catch (e: TypeCheckError) {
+    //    e.report()
+    // }
 }
