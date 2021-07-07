@@ -15,6 +15,7 @@ repositories {
 dependencies {
     val arrowVersion = "0.13.2"
     implementation("io.arrow-kt:arrow-core:$arrowVersion")
+    implementation("com.github.h0tk3y.betterParse:better-parse:0.4.2")
     testImplementation(kotlin("test"))
 }
 

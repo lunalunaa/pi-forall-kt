@@ -3,10 +3,10 @@ package org.luna.piforall
 import org.luna.piforall.core.*
 import org.luna.piforall.core.CTerm.*
 
-object CLI {
+class CLI(debugMode: Boolean) {
 
-    private val elaborator = Elaborator()
-    private const val prompt = ">"
+    private val elaborator = Elaborator(debugMode)
+    private val prompt = ">"
 
     private fun parse(input: String): CTerm? = TODO()
     private fun typeCheck(tm: CTerm, ty: CType): Term? =
@@ -34,8 +34,9 @@ object CLI {
     fun REPL() {
         while (true) {
             printPrompt()
-            val tm = readAndParse()
             val ty = readAndParse()
+            printPrompt()
+            val tm = readAndParse()
             val nf = checkAndNormalize(tm, ty)
             if (nf != null) {
                 println(nf)
@@ -53,15 +54,15 @@ object CLI {
     }
 
     fun test1() {
-        val idType = CTerm.CPi("A", CTerm.CUniv, CTerm.CPi("_", CTerm.CVar("A"), CTerm.CVar("A")))
-        val idLam = CTerm.CLam("A", CTerm.CLam("x", CTerm.CVar("x")))
-        val constType = CTerm.CPi(
-            "A", CTerm.CUniv,
-            CTerm.CPi(
-                "B", CTerm.CUniv,
-                CTerm.CPi(
-                    "_1", CTerm.CVar("A"),
-                    CTerm.CPi("_2", CTerm.CVar("B"), CTerm.CVar("A"))
+        val idType = CPi("A", CUniv, CPi("_", CVar("A"), CVar("A")))
+        val idLam = CLam("A", CLam("x", CVar("x")))
+        val constType = CPi(
+            "A", CUniv,
+            CPi(
+                "B", CUniv,
+                CPi(
+                    "_1", CVar("A"),
+                    CPi("_2", CVar("B"), CVar("A"))
                 )
             )
         )
@@ -71,8 +72,8 @@ object CLI {
         val idAppConst = CApp(idLam, constLam)
 
 
-        val notidType = CTerm.CPi("A", CTerm.CUniv, CTerm.CPi("_", CTerm.CVar("A"), CUniv))
-        val notidLam = CTerm.CLam("A", CTerm.CLam("x", CTerm.CVar("A")))
+        val notidType = CPi("A", CUniv, CPi("_", CVar("A"), CUniv))
+        val notidLam = CLam("A", CLam("x", CVar("A")))
 
         //println("this is not id")
         debug(notidLam, notidType)
@@ -89,7 +90,6 @@ object CLI {
 }
 
 fun main() {
-    //CLI.REPL()
-
-    CLI.test1()
+    CLI(true).REPL()
+    //CLI.test1()
 }

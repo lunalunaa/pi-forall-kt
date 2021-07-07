@@ -34,12 +34,12 @@ data class Context(
 }
 
 
-class Elaborator {
+class Elaborator(val debugMode: Boolean) {
 
 
     @Throws(TypeCheckError::class)
     fun checkTy(ctx: Context, ct: CTerm, expected: VType): Term {
-        debugChecker(ctx, ct, expected)
+        if (debugMode) debugChecker(ctx, ct, expected)
 
         return if (ct is CTerm.CLam && expected is Value.VPi) {
             val tm =
@@ -57,7 +57,8 @@ class Elaborator {
 
     @Throws(TypeCheckError::class)
     fun inferTy(ctx: Context, ct: CTerm): Pair<Term, VType> {
-        debugInferer(ctx, ct)
+
+        if (debugMode) debugInferer(ctx, ct)
 
         return when (ct) {
 
@@ -100,6 +101,7 @@ class Elaborator {
 
 }
 
+// TODO: declarations
 data class Decl(val sig: CType, val def: CTerm)
 
 fun main() {
