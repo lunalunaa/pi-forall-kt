@@ -6,13 +6,12 @@ data class Normalizer(val env: Env) {
     constructor() : this(emptyList())
 
     fun eval(tm: Term): Value = when (tm) {
-        is Term.Var -> env[tm.idx]  // indices -- the top of the environment stack
+        is Term.Var -> env[tm.idx]  // indices -- the top of the environment stack, if use levels, then env[env.size - tm.idx]
         is Term.App -> {
-            val v1 = eval(tm.t1)
-            val v2 = eval(tm.t2)
-            when (v1) {
-                is Value.VLam -> v1.body.applyTo(lazy { v2 })
-                else -> Value.VApp(v1, lazy { v2 })
+            val t2Lazy = lazy { eval(tm.t2) }
+            when (val v1 = eval(tm.t1)) {
+                is Value.VLam -> v1.body.applyTo(t2Lazy)
+                else -> Value.VApp(v1, t2Lazy)
             }
         }
         is Term.Lam -> Value.VLam(tm.binder, Value.Closure(env, tm.body))

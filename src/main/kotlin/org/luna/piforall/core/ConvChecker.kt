@@ -1,5 +1,8 @@
 package org.luna.piforall.core
 
+/**
+ * Conversion checking
+ */
 fun checkConv(lvl: Lvl, v1: Value, v2: Value): Boolean {
 
     val currLvl = lazy { Value.VVar(lvl) }

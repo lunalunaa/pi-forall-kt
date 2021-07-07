@@ -18,7 +18,9 @@ sealed class Term {
     data class Lam(val binder: Name, val body: Term) : Term()
     data class App(val t1: Term, val t2: Term) : Term()
     data class Pi(val binder: Name, val dom: Type, val codom: Type) : Term()
-    object Univ : Term()
+    object Univ : Term() {
+        override fun toString(): String = "Univ"
+    }
 }
 
 
@@ -30,7 +32,9 @@ sealed class Value {
     data class VLam(val binder: Name, val body: Closure) : Value()
     data class VApp(val v1: Value, val v2: Lazy<Value>) : Value()
     data class VPi(val binder: Name, val dom: Lazy<VType>, val codom: Closure) : Value()
-    object VUniv : Value()
+    object VUniv : Value() {
+        override fun toString(): String = "VUniv"
+    }
 
     data class Closure(val env: Env, val body: Term) {
         fun applyTo(v: Lazy<Value>): Value = Normalizer(env.prepend(v.value)).eval(body)

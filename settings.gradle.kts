@@ -1,3 +1,2 @@
-
-rootProject.name = "pi-for-all-kt"
+rootProject.name = "pi-forall-kt"
 

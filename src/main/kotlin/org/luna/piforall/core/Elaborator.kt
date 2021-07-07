@@ -1,11 +1,11 @@
 package org.luna.piforall.core
 
 import org.luna.piforall.core.TypeCheckError.*
+import org.luna.piforall.util.Debugger.debugChecker
+import org.luna.piforall.util.Debugger.debugInferer
 import org.luna.piforall.util.prepend
 
 typealias Types = List<Pair<Name, VType>>
-
-// TODO: use mutable map?
 
 data class Context(
     val env: Env,
@@ -14,6 +14,11 @@ data class Context(
 ) {
 
     fun bind(name: Name, ty: Lazy<VType>): Context {
+        /**
+        Here it creates a VVar with CURRENT level, and pushes it into the stack.
+        But can closures store values with indices?? That's a bad idea, because in de Bruijn index, all free variables
+        have to shift when we go across another binder, this means we have to shift the entire closure.
+         */
         return Context(env.prepend(Value.VVar(lvl)), types.prepend(name to ty.value), lvl + 1)
     }
 
@@ -21,7 +26,7 @@ data class Context(
         return Context(env.prepend(v.value), types.prepend(name to ty.value), (lvl + 1))
     }
 
-    companion object Factory {
+    companion object {
         fun emptyCxt(): Context {
             return Context(emptyList(), emptyList(), 0)
         }
@@ -31,8 +36,11 @@ data class Context(
 
 class Elaborator {
 
+
     @Throws(TypeCheckError::class)
     fun checkTy(ctx: Context, ct: CTerm, expected: VType): Term {
+        debugChecker(ctx, ct, expected)
+
         return if (ct is CTerm.CLam && expected is Value.VPi) {
             val tm =
                 checkTy(
@@ -48,27 +56,34 @@ class Elaborator {
     }
 
     @Throws(TypeCheckError::class)
-    fun inferTy(ctx: Context, ct: CTerm): Pair<Term, VType> = when (ct) {
-        is CTerm.CVar -> ctx.types.run {
-            val idx = indexOfFirst { (name, _) -> name == ct.name }
-            return if (idx != -1) Pair(Term.Var(idx), get(idx).second) else throw VarOutOfScope(ct)
-        }
-        is CTerm.CApp -> {
-            val (tm1, inferred) = inferTy(ctx, ct.tm1)
-            if (inferred is Value.VPi) {
-                val tm2 = checkTy(ctx, ct.tm2, inferred.dom.value)
-                Pair(Term.App(tm1, tm2), inferred.codom.applyTo(lazy { Normalizer(ctx.env).eval(tm2) }))
-            } else {
-                throw ExpectedFunType(inferred)
+    fun inferTy(ctx: Context, ct: CTerm): Pair<Term, VType> {
+        debugInferer(ctx, ct)
+
+        return when (ct) {
+
+            is CTerm.CVar -> ctx.types.run {
+                val idx = indexOfFirst { (name, _) -> name == ct.name }
+                return if (idx != -1) Pair(Term.Var(idx), get(idx).second) else throw VarOutOfScope(ct)
             }
+            is CTerm.CApp -> {
+                val (tm1, inferred) = inferTy(ctx, ct.tm1)
+                if (inferred is Value.VPi) {
+                    val tm2 = checkTy(ctx, ct.tm2, inferred.dom.value)
+                    Pair(Term.App(tm1, tm2), inferred.codom.applyTo(lazy { Normalizer(ctx.env).eval(tm2) }))
+                } else {
+                    throw ExpectedFunType(inferred)
+                }
+            }
+            is CTerm.CLam -> throw CannotInferLambda
+
+            // I think Pi can be either synthed or checked
+            is CTerm.CPi -> {
+                val dom = checkTy(ctx, ct.dom, Value.VUniv)
+                val codom = checkTy(ctx.bind(ct.binder, lazy { Normalizer(ctx.env).eval(dom) }), ct.codom, Value.VUniv)
+                Pair(Term.Pi(ct.binder, dom, codom), Value.VUniv)
+            }
+            is CTerm.CUniv -> Pair(Term.Univ, Value.VUniv)
         }
-        is CTerm.CLam -> throw CannotInferLambda
-        is CTerm.CPi -> {
-            val dom = checkTy(ctx, ct.dom, Value.VUniv)
-            val codom = checkTy(ctx.bind(ct.binder, lazy { Normalizer(ctx.env).eval(dom) }), ct.codom, Value.VUniv)
-            Pair(Term.Pi(ct.binder, dom, codom), Value.VUniv)
-        }
-        is CTerm.CUniv -> Pair(Term.Univ, Value.VUniv)
     }
 
     /**
@@ -86,18 +101,7 @@ class Elaborator {
 }
 
 data class Decl(val sig: CType, val def: CTerm)
-typealias Module = List<Decl>
-typealias Tele = List<Decl>
 
 fun main() {
-    //val ct = CTerm.CPi("A", CTerm.CUniv, CTerm.CPi("_", CTerm.CVar("A"), CTerm.CVar("A")))
-    //val tm = CTerm.CLam("A", CTerm.CLam("x", CTerm.CVar("x")))
-    //val ty = Elaborator().checkTy(Context.emptyCxt(), ct, Value.VUniv)
 
-
-    //try {
-    //    Normalizer.normalize(Elaborator().checkTy(tm, Normalizer.eval(ty)))
-    //} catch (e: TypeCheckError) {
-    //    e.report()
-    // }
 }

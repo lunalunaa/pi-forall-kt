@@ -43,6 +43,15 @@ object CLI {
         }
     }
 
+    fun debug(ct: CTerm, tm: CType) {
+        println("DEBUGGING")
+        val tyckResult = typeCheck(ct, tm)
+        if (tyckResult != null) {
+            println("SUCCESS! Now normalizing")
+            println(Normalizer.normalize(tyckResult))
+        }
+    }
+
     fun test1() {
         val idType = CTerm.CPi("A", CTerm.CUniv, CTerm.CPi("_", CTerm.CVar("A"), CTerm.CVar("A")))
         val idLam = CTerm.CLam("A", CTerm.CLam("x", CTerm.CVar("x")))
@@ -65,10 +74,9 @@ object CLI {
         val notidType = CTerm.CPi("A", CTerm.CUniv, CTerm.CPi("_", CTerm.CVar("A"), CUniv))
         val notidLam = CTerm.CLam("A", CTerm.CLam("x", CTerm.CVar("A")))
 
-        println("this is not id")
-        val typeCheckedNotID = typeCheck(notidLam, notidType)
-        println(typeCheckedNotID)
-        println(Normalizer.normalize(typeCheckedNotID!!))
+        //println("this is not id")
+        debug(notidLam, notidType)
+        println(Normalizer.eval(Term.App(Term.Lam("A", Term.Lam("x", Term.Var(1))), Term.Univ)))
 
         //println("this is id")
         //println(typeCheck(idLam, idType))
