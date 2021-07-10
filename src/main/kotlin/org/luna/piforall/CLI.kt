@@ -8,8 +8,14 @@ class CLI(debugMode: Boolean) {
     private val elaborator = Elaborator(debugMode)
     private val prompt = ">"
 
-    private fun parse(input: String): CTerm? = TODO()
-    private fun typeCheck(tm: CTerm, ty: CType): Term? =
+    private fun parse(input: String): CTerm? = try {
+        Parser.termParser.parseToEnd(input)
+    } catch (e: Exception) {
+        println(e.message)
+        null
+    }
+
+    private fun typeCheck(tm: CTerm, tyEvaluated: VType): Term? =
         try {
             elaborator.checkTy(tm, tyEvaluated)
         } catch (e: TypeCheckError) {

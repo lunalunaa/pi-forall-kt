@@ -17,6 +17,8 @@ dependencies {
     implementation("io.arrow-kt:arrow-core:$arrowVersion")
     implementation("com.github.h0tk3y.betterParse:better-parse:0.4.2")
     testImplementation(kotlin("test"))
+    implementation(group = "org.jline", name = "jline", version = "3.1.3")
+
 }
 
 tasks.test {
