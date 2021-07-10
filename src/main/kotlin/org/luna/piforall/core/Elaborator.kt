@@ -36,7 +36,6 @@ data class Context(
 
 class Elaborator(private val debugMode: Boolean) {
 
-
     @Throws(TypeCheckError::class)
     fun checkTy(ctx: Context, ct: CTerm, expected: VType): Term {
         if (debugMode) debugChecker(ctx, ct, expected)
@@ -51,7 +50,7 @@ class Elaborator(private val debugMode: Boolean) {
             Term.Lam(ct.binder, tm)
         } else {
             val (tm, inferred) = inferTy(ctx, ct)
-            if (checkConv(ctx.lvl, expected, inferred)) tm else throw TypeMismatch(expected, inferred)
+            if (checkConv(ctx.lvl, expected, inferred)) tm else throw TypeMismatch(expected, inferred, ct)
         }
     }
 
