@@ -36,7 +36,9 @@ sealed class Value {
         override fun toString(): String = "VUniv"
     }
 
+    // to substitute something (say, k-th free var) in the closure (environment), just substitute in the top-most env
     data class Closure(val env: Env, val body: Term) {
         fun applyTo(v: Lazy<Value>): Value = Normalizer(env.prepend(v.value)).eval(body)
     }
+
 }

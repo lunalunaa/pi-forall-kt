@@ -34,7 +34,7 @@ data class Context(
 }
 
 
-class Elaborator(val debugMode: Boolean) {
+class Elaborator(private val debugMode: Boolean) {
 
 
     @Throws(TypeCheckError::class)

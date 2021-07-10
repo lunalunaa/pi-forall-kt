@@ -1,7 +1,7 @@
 package org.luna.piforall
 
+import com.github.h0tk3y.betterParse.grammar.parseToEnd
 import org.luna.piforall.core.*
-import org.luna.piforall.core.CTerm.*
 
 class CLI(debugMode: Boolean) {
 
@@ -11,14 +11,13 @@ class CLI(debugMode: Boolean) {
     private fun parse(input: String): CTerm? = TODO()
     private fun typeCheck(tm: CTerm, ty: CType): Term? =
         try {
-            val tyElaborated = elaborator.checkTy(ty, Value.VUniv)
-            elaborator.checkTy(tm, Normalizer.eval(tyElaborated))
+            elaborator.checkTy(tm, tyEvaluated)
         } catch (e: TypeCheckError) {
             println(e.report())
             null
         }
 
-    private fun checkAndNormalize(tm: CTerm, ct: CType): Term? {
+    private fun checkAndNormalize(tm: CTerm, ct: VType): Term? {
         val tmElaborated = typeCheck(tm, ct)
         return if (tmElaborated != null) {
             Normalizer.normalize(tmElaborated)
@@ -28,68 +27,40 @@ class CLI(debugMode: Boolean) {
     }
 
     private tailrec fun readInput(): String = readLine() ?: readInput()
-    private tailrec fun readAndParse(): CTerm = parse(readInput()) ?: readAndParse()
+    private tailrec fun readAndParse(): CTerm {
+        val parsed = parse(readInput())
+        return if (parsed != null) parsed
+        else {
+            printPrompt()
+            readAndParse()
+        }
+    }
+
     private fun printPrompt(): Unit = print(prompt)
 
-    fun REPL() {
+    private fun typeCheckAgainstUniv(ty: CTerm): VType? = try {
+        val tyElaborated = elaborator.checkTy(ty, Value.VUniv)
+        Normalizer.eval(tyElaborated)
+    } catch (e: TypeCheckError) {
+        println(e.report())
+        null
+    }
+
+    fun repl() {
         while (true) {
             printPrompt()
-            val ty = readAndParse()
+            val tyEvaluated = typeCheckAgainstUniv(readAndParse()) ?: continue
+
             printPrompt()
             val tm = readAndParse()
-            val nf = checkAndNormalize(tm, ty)
+            val nf = checkAndNormalize(tm, tyEvaluated)
             if (nf != null) {
                 println(nf)
             }
         }
     }
-
-    fun debug(ct: CTerm, tm: CType) {
-        println("DEBUGGING")
-        val tyckResult = typeCheck(ct, tm)
-        if (tyckResult != null) {
-            println("SUCCESS! Now normalizing")
-            println(Normalizer.normalize(tyckResult))
-        }
-    }
-
-    fun test1() {
-        val idType = CPi("A", CUniv, CPi("_", CVar("A"), CVar("A")))
-        val idLam = CLam("A", CLam("x", CVar("x")))
-        val constType = CPi(
-            "A", CUniv,
-            CPi(
-                "B", CUniv,
-                CPi(
-                    "_1", CVar("A"),
-                    CPi("_2", CVar("B"), CVar("A"))
-                )
-            )
-        )
-
-
-        val constLam = CLam("A", CLam("B", CLam("x", CLam("y", CVar("x")))))
-        val idAppConst = CApp(idLam, constLam)
-
-
-        val notidType = CPi("A", CUniv, CPi("_", CVar("A"), CUniv))
-        val notidLam = CLam("A", CLam("x", CVar("A")))
-
-        //println("this is not id")
-        debug(notidLam, notidType)
-        println(Normalizer.eval(Term.App(Term.Lam("A", Term.Lam("x", Term.Var(1))), Term.Univ)))
-
-        //println("this is id")
-        //println(typeCheck(idLam, idType))
-        //println(Normalizer.eval(typeCheck(idLam, idType)!!))
-
-        //println("this is const")
-        //println(typeCheck(constLam, constType))
-        //println(Normalizer.normalize(typeCheck(constLam, constType)!!))
-    }
 }
 
 fun main() {
-    CLI(true).REPL()
-    //CLI.test1()
+    CLI(false).repl()
 }
