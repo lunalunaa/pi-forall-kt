@@ -33,6 +33,7 @@ data class Context(
     }
 }
 
+// TODO: refactor code so that context is a member of the elaborator
 
 class Elaborator(private val debugMode: Boolean) {
 
@@ -76,7 +77,7 @@ class Elaborator(private val debugMode: Boolean) {
             }
             is CTerm.CLam -> throw CannotInferLambda
 
-            // I think Pi can be either synthed or checked
+            // I think Pi can be either synthesized or checked
             is CTerm.CPi -> {
                 val dom = checkTy(ctx, ct.dom, Value.VUniv)
                 val codom = checkTy(ctx.bind(ct.binder, lazy { Normalizer(ctx.env).eval(dom) }), ct.codom, Value.VUniv)
@@ -99,9 +100,6 @@ class Elaborator(private val debugMode: Boolean) {
     fun inferTy(ct: CTerm): Pair<Term, VType> = inferTy(Context.emptyCxt(), ct)
 
 }
-
-// TODO: declarations
-data class Decl(val sig: CType, val def: CTerm)
 
 fun main() {
 

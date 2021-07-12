@@ -2,6 +2,7 @@ package org.luna.piforall.core
 
 
 typealias CType = CTerm
+typealias Program = List<CDecl>
 
 sealed class CTerm {
     // TODO: create a debug mode for printing these terms?
@@ -26,3 +27,6 @@ sealed class CTerm {
     }
 }
 
+data class CDecl(val name: Name, val sig: CType, val def: CTerm) {
+    override fun toString(): String = "$name: $sig\n$name = $def"
+}

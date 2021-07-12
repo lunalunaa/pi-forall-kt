@@ -1,40 +1,35 @@
 package org.luna.piforall
 
-import com.github.h0tk3y.betterParse.grammar.parseToEnd
-import org.luna.piforall.core.*
+import org.luna.piforall.core.CTerm
+import org.luna.piforall.core.Program
+import org.luna.piforall.core.TypeChecker
+import java.io.FileNotFoundException
+import java.nio.file.Files
+import java.nio.file.Paths
 
 class CLI(debugMode: Boolean) {
 
-    private val elaborator = Elaborator(debugMode)
     private val prompt = ">"
+    private val typeChecker = TypeChecker(debugMode)
 
-    private fun parse(input: String): CTerm? = try {
-        Parser.termParser.parseToEnd(input)
+    private fun parseProgram(input: String): Program? = try {
+        Parser.parseDecl(input)
     } catch (e: Exception) {
         println(e.message)
         null
     }
 
-    private fun typeCheck(tm: CTerm, tyEvaluated: VType): Term? =
-        try {
-            elaborator.checkTy(tm, tyEvaluated)
-        } catch (e: TypeCheckError) {
-            println(e.report())
-            null
-        }
-
-    private fun checkAndNormalize(tm: CTerm, ct: VType): Term? {
-        val tmElaborated = typeCheck(tm, ct)
-        return if (tmElaborated != null) {
-            Normalizer.normalize(tmElaborated)
-        } else {
-            null
-        }
+    private fun parseTerm(input: String): CTerm? = try {
+        Parser.parseTerm(input)
+    } catch (e: Exception) {
+        println(e.message)
+        null
     }
 
     private tailrec fun readInput(): String = readLine() ?: readInput()
+
     private tailrec fun readAndParse(): CTerm {
-        val parsed = parse(readInput())
+        val parsed = parseTerm(readInput())
         return if (parsed != null) parsed
         else {
             printPrompt()
@@ -44,29 +39,43 @@ class CLI(debugMode: Boolean) {
 
     private fun printPrompt(): Unit = print(prompt)
 
-    private fun typeCheckAgainstUniv(ty: CTerm): VType? = try {
-        val tyElaborated = elaborator.checkTy(ty, Value.VUniv)
-        Normalizer.eval(tyElaborated)
-    } catch (e: TypeCheckError) {
-        println(e.report())
-        null
-    }
-
     fun repl() {
         while (true) {
             printPrompt()
-            val tyEvaluated = typeCheckAgainstUniv(readAndParse()) ?: continue
+            val tyEvaluated = typeChecker.typeCheckAgainstUniv(readAndParse()) ?: continue
 
             printPrompt()
             val tm = readAndParse()
-            val nf = checkAndNormalize(tm, tyEvaluated)
+            val nf = typeChecker.checkAndNormalize(tm, tyEvaluated)
             if (nf != null) {
                 println(nf)
             }
         }
     }
+
+
+    fun typeCheckFile(fileName: String): Boolean {
+        val allLinesJoined = try {
+            Files.readAllLines(Paths.get(fileName)).joinToString("")
+        } catch (e: FileNotFoundException) {
+            println("$e not found")
+            null
+        }
+
+        TODO("declaration checker not finished")
+
+//        return if (allLinesJoined != null) {
+//            val prog = parseProgram(allLinesJoined)
+//            if (prog != null) {
+//                false
+//            }
+//        } else {
+//            false
+//        }
+    }
 }
 
 fun main() {
-    CLI(false).repl()
+    //CLI(false).repl()
+    CLI(false).typeCheckFile("hello.txt")
 }

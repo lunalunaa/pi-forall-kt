@@ -23,7 +23,6 @@ sealed class Term {
     }
 }
 
-
 /**
  * Values
  */
@@ -40,5 +39,9 @@ sealed class Value {
     data class Closure(val env: Env, val body: Term) {
         fun applyTo(v: Lazy<Value>): Value = Normalizer(env.prepend(v.value)).eval(body)
     }
-
 }
+
+data class CheckedDecl(val name: Name, val sig: VType, val def: Term) {
+    override fun toString(): String = "$name: $sig\n$name = $def"
+}
+
