@@ -36,7 +36,7 @@ object Parser {
 
         val term: Parser<CTerm> by leftAssociative(nonApp, optional(ws)) { a, _, b -> CTerm.CApp(a, b) }
 
-        override val rootParser: Parser<CTerm> = term
+        override val rootParser: Parser<CTerm> by term
     }
 
     // The caveat: Grammar will only collect by-delegated tokenizers declared IN THE SAME GRAMMAR CLASS.
@@ -46,14 +46,43 @@ object Parser {
 
         val lineSeparator by regexToken("\\n+")
         val ws by regexToken("\\s+", ignore = true)
-        val varName by regexToken("\\w+")
         val equalSign by literalToken("=")
+        val colon by literalToken(":")
 
 
-        val decl by varName * termParser * -equalSign * termParser use { CDecl(t1.text, t2, t3) }
-        val decls by oneOrMore(decl)
+        val lPar by literalToken("(")
+        val rPar by literalToken(")")
+        val slash by literalToken("\\")
+        val point by literalToken(".")
+        val arrow by literalToken("->")
+        val univ by literalToken("U")
+        val varName by regexToken("\\w+")
 
-        override val rootParser: Parser<Program> = decls
+
+        val universe by univ use { CTerm.CUniv }
+        val variable by varName use { CTerm.CVar(text) }
+        val lambda by -slash * varName * -point * parser { term } use { CTerm.CLam(t1.text, t2) }
+        val pi by (-lPar * varName * -colon * parser { term } * -rPar) *
+                -arrow * parser { term } use { CTerm.CPi(t1.text, t2, t3) }
+        val termWithPar by -lPar * parser { term } * -rPar
+        val nonApp by universe or termWithPar or lambda or variable or pi use {
+            //println(this)
+            this
+        }
+
+        val term: Parser<CTerm> by leftAssociative(nonApp, optional(ws)) { a, _, b ->
+            //println(CTerm.CApp(a, b))
+            CTerm.CApp(a, b)
+        }
+
+        val decl by varName * -colon * term * -equalSign * term use {
+            //println(CDecl(t1.text, t2, t3))
+            CDecl(t1.text, t2, t3)
+        }
+        val decls by separatedTerms(decl, lineSeparator)
+
+
+        override val rootParser: Parser<Program> by decls
     }
 
     /**
