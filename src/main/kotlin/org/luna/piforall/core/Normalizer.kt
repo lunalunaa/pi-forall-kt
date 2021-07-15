@@ -38,5 +38,6 @@ data class Normalizer(val env: Env) {
     companion object {
         fun normalize(tm: Term): Term = Normalizer().normalize(tm)
         fun eval(tm: Term): Value = Normalizer().eval(tm)
+        fun quote(v: Value) = Normalizer().quote(0, v)
     }
 }

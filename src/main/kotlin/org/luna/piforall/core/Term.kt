@@ -19,8 +19,20 @@ sealed class Term {
     data class App(val t1: Term, val t2: Term) : Term()
     data class Pi(val binder: Name, val dom: Type, val codom: Type) : Term()
     object Univ : Term() {
-        override fun toString(): String = "Univ"
+        override fun toString(): String = "U"
     }
+
+    private fun pretty(lvl: Lvl, varList: List<Name>): String = when (this) {
+        is App -> "(${t1.pretty(lvl, varList)} ${t2.pretty(lvl, varList)})"
+        is Lam -> "λ $binder. ${body.pretty(lvl + 1, varList.prepend(binder))}"
+        is Pi -> "($binder : ${dom.pretty(lvl, varList)}) -> ${codom.pretty(lvl + 1, varList.prepend(binder))}"
+        is Univ -> "U"
+        is Var -> varList[idx]
+    }
+
+    // this might throw this exception
+    @Throws(IndexOutOfBoundsException::class)
+    fun pretty(): String = pretty(0, emptyList())
 }
 
 /**

@@ -39,7 +39,12 @@ object Parser {
         override val rootParser: Parser<CTerm> = term
     }
 
+    // The caveat: Grammar will only collect by-delegated tokenizers declared IN THE SAME GRAMMAR CLASS.
+    // This means the default tokenizer will fail if not all tokens are declared inside it
+    // TODO: reimplement this by overriding the defaultParser
     private val programParser = object : Grammar<Program>() {
+
+        val lineSeparator by regexToken("\\n+")
         val ws by regexToken("\\s+", ignore = true)
         val varName by regexToken("\\w+")
         val equalSign by literalToken("=")

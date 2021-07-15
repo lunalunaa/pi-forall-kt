@@ -16,7 +16,7 @@ class TypeChecker(private val debugMode: Boolean) {
     fun checkAndNormalize(tm: CTerm, ty: VType, context: Context = Context.emptyContext()): Term? {
         val tmElaborated = typeCheck(tm, ty, context)
         return if (tmElaborated != null) {
-            Normalizer.normalize(tmElaborated)
+            Normalizer(context.env).normalize(tmElaborated)
         } else null
     }
 
@@ -24,7 +24,7 @@ class TypeChecker(private val debugMode: Boolean) {
         try {
             val elaborator = Elaborator(context, debugMode)
             val tyElaborated = elaborator.checkTy(ty, Value.VUniv)
-            Normalizer.eval(tyElaborated)
+            Normalizer(context.env).eval(tyElaborated)
         } catch (e: TypeCheckError) {
             println(e.report())
             null
@@ -33,12 +33,12 @@ class TypeChecker(private val debugMode: Boolean) {
     private fun checkDecl(context: Context, decl: CDecl): CheckedDecl? {
         val tyVal = typeCheckAgainstUniv(decl.sig, context)
         return tyVal?.let { ty ->
-            typeCheck(decl.def, ty)?.let { CheckedDecl(decl.name, ty, it) }
+            typeCheck(decl.def, ty, context)?.let { CheckedDecl(decl.name, ty, it) }
         }
     }
 
     // I think this can be done with a fold?
-    fun checkDecls(decls: List<CDecl>): List<CheckedDecl>? {
+    fun checkDecls(decls: List<CDecl>): Pair<List<CheckedDecl>, Env>? {
         val checkedDecls = mutableListOf<CheckedDecl>()
         var context = Context.emptyContext()
         for (decl in decls) {
@@ -53,6 +53,6 @@ class TypeChecker(private val debugMode: Boolean) {
                 return null
             }
         }
-        return checkedDecls
+        return checkedDecls to context.env
     }
 }

@@ -70,7 +70,9 @@ class Elaborator(
 
             is CTerm.CVar -> context.types.run {
                 val idx = indexOfFirst { (name, _) -> name == ct.name }
-                return if (idx != -1) Pair(Term.Var(idx), get(idx).second) else throw VarOutOfScope(ct)
+                return if (idx != -1) Pair(Term.Var(idx), get(idx).second) else {
+                    throw VarOutOfScope(ct)
+                }
             }
             is CTerm.CApp -> {
                 val (tm1, inferred) = inferTy(ct.tm1)

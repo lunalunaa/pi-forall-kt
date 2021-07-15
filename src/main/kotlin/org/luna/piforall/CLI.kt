@@ -1,6 +1,7 @@
 package org.luna.piforall
 
 import org.luna.piforall.core.CTerm
+import org.luna.piforall.core.Normalizer
 import org.luna.piforall.core.Program
 import org.luna.piforall.core.TypeChecker
 import java.io.FileNotFoundException
@@ -56,18 +57,32 @@ class CLI(debugMode: Boolean) {
 
     fun typeCheckFile(fileName: String): Boolean {
         val allLinesJoined = try {
-            Files.readAllLines(Paths.get(fileName)).joinToString("")
+            Files.readAllLines(Paths.get(fileName)).joinToString(separator = "\n")
         } catch (e: FileNotFoundException) {
             println("$e not found")
             null
         }
 
-        return if (allLinesJoined != null) {
+        println(allLinesJoined)
+
+        // TODO: this is ugly
+        if (allLinesJoined != null) {
             val prog = parseProgram(allLinesJoined)
             if (prog != null) {
-                typeChecker.checkDecls(prog) != null
-            } else false
-        } else false
+                val checkedDeclsPair = typeChecker.checkDecls(prog)
+                if (checkedDeclsPair != null) {
+                    val (checkedDecls, env) = checkedDeclsPair
+
+                    // This don't work. I don't know exactly why???
+                    //println(Normalizer(env).normalize(checkedDecls.last().def).prettyPrint(0, emptyList()))
+                    print(Normalizer.quote(env.first()).pretty() + " : ")
+                    println(Normalizer.quote(checkedDecls.last().sig).pretty())
+                    return true
+                }
+            }
+        }
+
+        return false
     }
 }
 
