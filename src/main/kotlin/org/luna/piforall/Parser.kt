@@ -34,8 +34,6 @@ object Parser {
         val termWithPar by -lPar * parser { term } * -rPar
         val nonApp by universe or termWithPar or lambda or variable or pi
 
-        //TODO: add parser for decls
-
         val term: Parser<CTerm> by leftAssociative(nonApp, optional(ws)) { a, _, b -> CTerm.CApp(a, b) }
 
         override val rootParser: Parser<CTerm> = term

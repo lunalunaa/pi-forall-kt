@@ -5,7 +5,6 @@ typealias CType = CTerm
 typealias Program = List<CDecl>
 
 sealed class CTerm {
-    // TODO: create a debug mode for printing these terms?
     data class CVar(val name: Name) : CTerm() {
         override fun toString(): String = name
     }

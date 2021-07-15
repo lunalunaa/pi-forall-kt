@@ -62,19 +62,16 @@ class CLI(debugMode: Boolean) {
             null
         }
 
-        TODO("declaration checker not finished")
-
-//        return if (allLinesJoined != null) {
-//            val prog = parseProgram(allLinesJoined)
-//            if (prog != null) {
-//                false
-//            }
-//        } else {
-//            false
-//        }
+        return if (allLinesJoined != null) {
+            val prog = parseProgram(allLinesJoined)
+            if (prog != null) {
+                typeChecker.checkDecls(prog) != null
+            } else false
+        } else false
     }
 }
 
+// TODO: write tests
 fun main() {
     //CLI(false).repl()
     CLI(false).typeCheckFile("hello.txt")
