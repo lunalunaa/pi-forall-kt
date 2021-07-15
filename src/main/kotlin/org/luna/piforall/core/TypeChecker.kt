@@ -1,45 +1,58 @@
 package org.luna.piforall.core
 
-class TypeChecker(debugMode: Boolean) {
-    private val elaborator = Elaborator(debugMode)
 
-    private fun typeCheck(tm: CTerm, tyEvaluated: VType): Term? =
+class TypeChecker(private val debugMode: Boolean) {
+    //private val elaborator = Elaborator(debugMode = debugMode)
+
+    private fun typeCheck(tm: CTerm, tyEvaluated: VType, context: Context = Context.emptyContext()): Term? =
         try {
+            val elaborator = Elaborator(context, debugMode)
             elaborator.checkTy(tm, tyEvaluated)
         } catch (e: TypeCheckError) {
             println(e.report())
             null
         }
 
-    fun checkAndNormalize(tm: CTerm, ct: VType): Term? {
-        val tmElaborated = typeCheck(tm, ct)
+    fun checkAndNormalize(tm: CTerm, ty: VType, context: Context = Context.emptyContext()): Term? {
+        val tmElaborated = typeCheck(tm, ty, context)
         return if (tmElaborated != null) {
             Normalizer.normalize(tmElaborated)
         } else null
     }
 
-    fun typeCheckAgainstUniv(ty: CTerm): VType? = try {
-        val tyElaborated = elaborator.checkTy(ty, Value.VUniv)
-        Normalizer.eval(tyElaborated)
-    } catch (e: TypeCheckError) {
-        println(e.report())
-        null
-    }
-
-    // TODO: this is not gonna work
-    private fun checkDeclaration(decl: CDecl): CheckedDecl? {
-        val tyVal = typeCheckAgainstUniv(decl.sig)
-        return if (tyVal != null) {
-            val tm = typeCheck(decl.def, tyVal)
-            tm?.let { CheckedDecl(decl.name, tyVal, it) }
-        } else {
+    fun typeCheckAgainstUniv(ty: CTerm, context: Context = Context.emptyContext()): VType? =
+        try {
+            val elaborator = Elaborator(context, debugMode)
+            val tyElaborated = elaborator.checkTy(ty, Value.VUniv)
+            Normalizer.eval(tyElaborated)
+        } catch (e: TypeCheckError) {
+            println(e.report())
             null
+        }
+
+    // I think this can be done with a fold, by returning the context
+    private fun checkDeclaration(context: Context, decl: CDecl): CheckedDecl? {
+        val tyVal = typeCheckAgainstUniv(decl.sig, context)
+        return tyVal?.let { ty ->
+            typeCheck(decl.def, ty)?.let { CheckedDecl(decl.name, ty, it) }
         }
     }
 
-    // TODO: this is not gonna work
     fun checkDecls(decls: List<CDecl>): List<CheckedDecl>? {
-        val checkedDecls = decls.map { checkDeclaration(it) }
-        return if (checkedDecls.contains(null)) null else checkedDecls.filterNotNull()
+        val checkedDecls = mutableListOf<CheckedDecl>()
+        var context = Context.emptyContext()
+        for (decl in decls) {
+            val declChecked = checkDeclaration(context, decl)
+            if (declChecked != null) {
+                context = context.define(
+                    declChecked.name,
+                    lazy { Normalizer(context.env).eval(declChecked.def) },
+                    lazy { declChecked.sig })
+                checkedDecls.add(declChecked)
+            } else {
+                return null
+            }
+        }
+        return checkedDecls
     }
 }
