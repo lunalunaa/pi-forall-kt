@@ -30,19 +30,19 @@ class TypeChecker(private val debugMode: Boolean) {
             null
         }
 
-    // I think this can be done with a fold, by returning the context
-    private fun checkDeclaration(context: Context, decl: CDecl): CheckedDecl? {
+    private fun checkDecl(context: Context, decl: CDecl): CheckedDecl? {
         val tyVal = typeCheckAgainstUniv(decl.sig, context)
         return tyVal?.let { ty ->
             typeCheck(decl.def, ty)?.let { CheckedDecl(decl.name, ty, it) }
         }
     }
 
+    // I think this can be done with a fold?
     fun checkDecls(decls: List<CDecl>): List<CheckedDecl>? {
         val checkedDecls = mutableListOf<CheckedDecl>()
         var context = Context.emptyContext()
         for (decl in decls) {
-            val declChecked = checkDeclaration(context, decl)
+            val declChecked = checkDecl(context, decl)
             if (declChecked != null) {
                 context = context.define(
                     declChecked.name,
