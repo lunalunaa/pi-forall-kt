@@ -2,10 +2,12 @@ package org.luna.piforall
 
 import com.github.h0tk3y.betterParse.combinators.*
 import com.github.h0tk3y.betterParse.grammar.Grammar
-import com.github.h0tk3y.betterParse.grammar.parseToEnd
 import com.github.h0tk3y.betterParse.grammar.parser
+import com.github.h0tk3y.betterParse.grammar.tryParseToEnd
+import com.github.h0tk3y.betterParse.lexer.TokenMatch
 import com.github.h0tk3y.betterParse.lexer.literalToken
 import com.github.h0tk3y.betterParse.lexer.regexToken
+import com.github.h0tk3y.betterParse.parser.*
 import com.github.h0tk3y.betterParse.parser.Parser
 import org.luna.piforall.core.CDecl
 import org.luna.piforall.core.CTerm
@@ -42,6 +44,7 @@ object Parser {
     // The caveat: Grammar will only collect by-delegated tokenizers declared IN THE SAME GRAMMAR CLASS.
     // This means the default tokenizer will fail if not all tokens are declared inside it
     // TODO: reimplement this by overriding the defaultParser
+    // TODO: make parser able to parse "(A B: U)"
     private val programParser = object : Grammar<Program>() {
 
         val lineSeparator by regexToken("\\n+")
@@ -85,11 +88,34 @@ object Parser {
         override val rootParser: Parser<Program> by decls
     }
 
+    private fun TokenMatch.reportLocation(): String = "\"$text\" at $offset ($row:$column)"
+
+    private fun ErrorResult.reportErr(): String = when (this) {
+        is MismatchedToken -> "Expected: \"${expected}\" but found ${found.reportLocation()}"
+        is UnparsedRemainder -> "Unexpected token \"${startsWith.reportLocation()}\" at the end"
+        is NoMatchingToken -> "Found ${tokenMismatch.reportLocation()} but no matching token"
+        is UnexpectedEof -> "Expecting $expected at the end"
+        else -> ""
+    }
+
+    private fun processParserErrs(err: ErrorResult) {
+        when (err) {
+            is AlternativesFailure -> err.errors.forEach { processParserErrs(it) }
+            else -> println(err.reportErr())
+        }
+    }
+
+    private fun <T> tryParse(str: String, parser: Grammar<T>): T? = try {
+        parser.tryParseToEnd(str).toParsedOrThrow().value
+    } catch (err: ParseException) {
+        processParserErrs(err.errorResult)
+        null
+    }
+
+    fun parseTerm(str: String): CTerm? = tryParse(str, termParser)
+
     /**
      * Parse a declaration, the first param is like decl: Type, the second is like decl =
      */
-    fun parseDecl(str: String): List<CDecl> = programParser.parseToEnd(str)
-
-    // TODO: add error handling, use tryParseToEnd
-    fun parseTerm(str: String): CTerm = termParser.parseToEnd(str)
+    fun parseDecl(str: String): List<CDecl>? = tryParse(str, programParser)
 }

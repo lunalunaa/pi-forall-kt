@@ -13,19 +13,9 @@ class CLI(debugMode: Boolean) {
     private val prompt = ">"
     private val typeChecker = TypeChecker(debugMode)
 
-    private fun parseProgram(input: String): Program? = try {
-        Parser.parseDecl(input)
-    } catch (e: Exception) {
-        println(e.message)
-        null
-    }
+    private fun parseProgram(input: String): Program? = Parser.parseDecl(input)
 
-    private fun parseTerm(input: String): CTerm? = try {
-        Parser.parseTerm(input)
-    } catch (e: Exception) {
-        println(e.message)
-        null
-    }
+    private fun parseTerm(input: String): CTerm? = Parser.parseTerm(input)
 
     private tailrec fun readInput(): String = readLine() ?: readInput()
 
@@ -63,8 +53,6 @@ class CLI(debugMode: Boolean) {
             null
         }
 
-        println(allLinesJoined)
-
         // TODO: this is ugly
         if (allLinesJoined != null) {
             val prog = parseProgram(allLinesJoined)
@@ -73,8 +61,6 @@ class CLI(debugMode: Boolean) {
                 if (checkedDeclsPair != null) {
                     val (checkedDecls, env) = checkedDeclsPair
 
-                    // This don't work. I don't know exactly why???
-                    //println(Normalizer(env).normalize(checkedDecls.last().def).prettyPrint(0, emptyList()))
                     print(Normalizer.quote(env.first()).pretty() + " : ")
                     println(Normalizer.quote(checkedDecls.last().sig).pretty())
                     return true

@@ -2,7 +2,6 @@ package org.luna.piforall.core
 
 
 class TypeChecker(private val debugMode: Boolean) {
-    //private val elaborator = Elaborator(debugMode = debugMode)
 
     private fun typeCheck(tm: CTerm, tyEvaluated: VType, context: Context = Context.emptyContext()): Term? =
         try {
