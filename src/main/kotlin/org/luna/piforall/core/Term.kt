@@ -22,6 +22,7 @@ sealed class Term {
         override fun toString(): String = "U"
     }
 
+    @Throws(IndexOutOfBoundsException::class)
     private fun pretty(lvl: Lvl, varList: List<Name>): String = when (this) {
         is App -> "(${t1.pretty(lvl, varList)} ${t2.pretty(lvl, varList)})"
         is Lam -> "λ $binder. ${body.pretty(lvl + 1, varList.prepend(binder))}"

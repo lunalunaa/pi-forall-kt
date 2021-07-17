@@ -64,11 +64,27 @@ object Parser {
 
         val universe by univ use { CTerm.CUniv }
         val variable by varName use { CTerm.CVar(text) }
+
+        val atom by universe or variable or (-lPar * parser { term } * -rPar)
+        val spine by leftAssociative(atom, optional(ws)) { a, _, b -> CTerm.CApp(a, b) }
+
         val lambda by -slash * varName * -point * parser { term } use { CTerm.CLam(t1.text, t2) }
-        val pi by (-lPar * varName * -colon * parser { term } * -rPar) *
-                -arrow * parser { term } use { CTerm.CPi(t1.text, t2, t3) }
+
+        // (a b c d ... : t) and so on
+        val doms by zeroOrMore(-lPar * zeroOrMore(varName) * -colon * parser { term } * -rPar)
+
+        // TODO: rename this
+        val pi2 by doms * -arrow * parser { term } map { (domBindings, codom) ->
+            domBindings.foldRight(codom) { (binders, dom), acc ->
+                binders.foldRight(acc) { name, ac -> CTerm.CPi(name.text, dom, ac) }
+            }
+        }
+
+        //val pi by (-lPar * varName * -colon * parser { term } * -rPar) *
+        // -arrow * parser { term } use { CTerm.CPi(t1.text, t2, t3) }
+
         val termWithPar by -lPar * parser { term } * -rPar
-        val nonApp by universe or termWithPar or lambda or variable or pi use {
+        val nonApp by universe or termWithPar or lambda or variable or pi2 use {
             //println(this)
             this
         }
@@ -77,6 +93,10 @@ object Parser {
             //println(CTerm.CApp(a, b))
             CTerm.CApp(a, b)
         }
+
+        // (A: U) -> A -> A -> A
+
+        //val funOrTerm by
 
         val decl by varName * -colon * term * -equalSign * term use {
             //println(CDecl(t1.text, t2, t3))
@@ -100,7 +120,8 @@ object Parser {
 
     private fun processParserErrs(err: ErrorResult) {
         when (err) {
-            is AlternativesFailure -> err.errors.forEach { processParserErrs(it) }
+            // only show the first parser error
+            is AlternativesFailure -> println(err.errors.first().reportErr())
             else -> println(err.reportErr())
         }
     }
