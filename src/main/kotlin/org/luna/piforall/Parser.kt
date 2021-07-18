@@ -5,6 +5,7 @@ import com.github.h0tk3y.betterParse.grammar.Grammar
 import com.github.h0tk3y.betterParse.grammar.parser
 import com.github.h0tk3y.betterParse.grammar.tryParseToEnd
 import com.github.h0tk3y.betterParse.lexer.TokenMatch
+import com.github.h0tk3y.betterParse.lexer.TokenMatchesSequence
 import com.github.h0tk3y.betterParse.lexer.literalToken
 import com.github.h0tk3y.betterParse.lexer.regexToken
 import com.github.h0tk3y.betterParse.parser.*
@@ -12,6 +13,40 @@ import com.github.h0tk3y.betterParse.parser.Parser
 import org.luna.piforall.core.CDecl
 import org.luna.piforall.core.CTerm
 import org.luna.piforall.core.Program
+
+/** Parses the sequence with [innerParser], and if that succeeds, maps its [Parsed] result with [transform].
+ * Then run this mapped result on any remaining input.
+ * Returns the [ErrorResult] of the `innerParser` otherwise.
+ */
+class BindCombinator<T, R>(
+    private val innerParser: Parser<T>,
+    val transform: (T) -> Parser<R>
+) : Parser<R> {
+    override fun tryParse(tokens: TokenMatchesSequence, fromPosition: Int): ParseResult<R> =
+        when (val innerResult = innerParser.tryParse(tokens, fromPosition)) {
+            is ErrorResult -> innerResult
+            is Parsed -> transform(innerResult.value).tryParse(tokens, innerResult.nextPosition)
+        }
+}
+
+/** Applies the [transform] function to the successful results of the receiver parser. See [MapCombinator]. */
+infix fun <A, T> Parser<A>.bind(transform: (A) -> Parser<T>): Parser<T> = BindCombinator(this, transform)
+
+/** Applies the [transform] extension to the successful results of the receiver parser. See [MapCombinator]. */
+infix fun <A, T> Parser<A>.useBind(transform: A.() -> Parser<T>): Parser<T> = BindCombinator(this, transform)
+
+/** Returns [Parsed] of [value] without consuming any input */
+class PureCombinator<T>(private val pureValue: T) : Parser<T> {
+    override fun tryParse(tokens: TokenMatchesSequence, fromPosition: Int): ParseResult<T> = object : Parsed<T>() {
+        override val nextPosition: Int
+            get() = fromPosition
+        override val value: T
+            get() = pureValue
+    }
+}
+
+/** Returns [Parsed] of [value] without consuming any input */
+fun <T> pure(value: T): Parser<T> = PureCombinator(value)
 
 object Parser {
 
@@ -47,8 +82,11 @@ object Parser {
     // TODO: make parser able to parse "(A B: U)"
     private val programParser = object : Grammar<Program>() {
 
+
+        // TODO: make it ignore keyword
         val lineSeparator by regexToken("\\n+")
         val ws by regexToken("\\s+", ignore = true)
+        val underscore by literalToken("_")
         val equalSign by literalToken("=")
         val colon by literalToken(":")
 
@@ -62,16 +100,20 @@ object Parser {
         val varName by regexToken("\\w+")
 
 
-        val universe by univ use { CTerm.CUniv }
+        val universe by univ asJust (CTerm.CUniv)
         val variable by varName use { CTerm.CVar(text) }
+        val binder by varName or underscore
 
         val atom by universe or variable or (-lPar * parser { term } * -rPar)
         val spine by leftAssociative(atom, optional(ws)) { a, _, b -> CTerm.CApp(a, b) }
-
-        val lambda by -slash * varName * -point * parser { term } use { CTerm.CLam(t1.text, t2) }
+        val lambda by -slash * oneOrMore(binder) * -point * parser { term } map { (binders, body) ->
+            binders.foldRight(body) { binder, acc ->
+                CTerm.CLam(binder.text, acc)
+            }
+        }
 
         // (a b c d ... : t) and so on
-        val doms by zeroOrMore(-lPar * zeroOrMore(varName) * -colon * parser { term } * -rPar)
+        val doms by zeroOrMore(-lPar * oneOrMore(binder) * -colon * parser { term } * -rPar)
 
         // TODO: rename this
         val pi2 by doms * -arrow * parser { term } map { (domBindings, codom) ->
@@ -80,29 +122,19 @@ object Parser {
             }
         }
 
-        //val pi by (-lPar * varName * -colon * parser { term } * -rPar) *
-        // -arrow * parser { term } use { CTerm.CPi(t1.text, t2, t3) }
-
-        val termWithPar by -lPar * parser { term } * -rPar
-        val nonApp by universe or termWithPar or lambda or variable or pi2 use {
-            //println(this)
-            this
+        val funOrSpine by spine * optional(arrow) bind { (sp, arr) ->
+            if (arr == null) pure(sp) else term map { CTerm.CPi("_", sp, it) }
         }
 
-        val term: Parser<CTerm> by leftAssociative(nonApp, optional(ws)) { a, _, b ->
-            //println(CTerm.CApp(a, b))
-            CTerm.CApp(a, b)
-        }
-
-        // (A: U) -> A -> A -> A
-
-        //val funOrTerm by
+        val term: Parser<CTerm> by lambda or pi2 or funOrSpine
 
         val decl by varName * -colon * term * -equalSign * term use {
             //println(CDecl(t1.text, t2, t3))
             CDecl(t1.text, t2, t3)
         }
-        val decls by separatedTerms(decl, lineSeparator)
+
+        // removes trailing line separators
+        val decls by -optional(lineSeparator) * separatedTerms(decl, lineSeparator) * -optional(lineSeparator)
 
 
         override val rootParser: Parser<Program> by decls
@@ -112,7 +144,7 @@ object Parser {
 
     private fun ErrorResult.reportErr(): String = when (this) {
         is MismatchedToken -> "Expected: \"${expected}\" but found ${found.reportLocation()}"
-        is UnparsedRemainder -> "Unexpected token \"${startsWith.reportLocation()}\" at the end"
+        is UnparsedRemainder -> "Unexpected token ${startsWith.reportLocation()}"
         is NoMatchingToken -> "Found ${tokenMismatch.reportLocation()} but no matching token"
         is UnexpectedEof -> "Expecting $expected at the end"
         else -> ""

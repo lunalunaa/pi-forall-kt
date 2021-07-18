@@ -26,7 +26,15 @@ sealed class Term {
     private fun pretty(lvl: Lvl, varList: List<Name>): String = when (this) {
         is App -> "(${t1.pretty(lvl, varList)} ${t2.pretty(lvl, varList)})"
         is Lam -> "λ $binder. ${body.pretty(lvl + 1, varList.prepend(binder))}"
-        is Pi -> "($binder : ${dom.pretty(lvl, varList)}) -> ${codom.pretty(lvl + 1, varList.prepend(binder))}"
+
+        is Pi -> {
+            if (binder != "_") "($binder : ${dom.pretty(lvl, varList)}) -> ${
+                codom.pretty(
+                    lvl + 1,
+                    varList.prepend(binder)
+                )
+            }" else "${dom.pretty(lvl, varList)} -> ${codom.pretty(lvl + 1, varList.prepend(binder))}"
+        }
         is Univ -> "U"
         is Var -> varList[idx]
     }
