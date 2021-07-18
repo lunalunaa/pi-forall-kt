@@ -79,62 +79,60 @@ object Parser {
     // The caveat: Grammar will only collect by-delegated tokenizers declared IN THE SAME GRAMMAR CLASS.
     // This means the default tokenizer will fail if not all tokens are declared inside it
     // TODO: reimplement this by overriding the defaultParser
-    // TODO: make parser able to parse "(A B: U)"
     private val programParser = object : Grammar<Program>() {
 
 
         // TODO: make it ignore keyword
-        val lineSeparator by regexToken("\\n+")
-        val ws by regexToken("\\s+", ignore = true)
-        val underscore by literalToken("_")
-        val equalSign by literalToken("=")
-        val colon by literalToken(":")
+        val LINE_SEPARATOR by regexToken("\\n+")
+        val WHITESPACE by regexToken("\\s+", ignore = true)
+        val UNDERSCORE by literalToken("_")
+        val EQUAL_SIGN by literalToken("=")
+        val COLON by literalToken(":")
 
 
-        val lPar by literalToken("(")
-        val rPar by literalToken(")")
-        val slash by literalToken("\\")
-        val point by literalToken(".")
-        val arrow by literalToken("->")
-        val univ by literalToken("U")
-        val varName by regexToken("\\w+")
+        val LEFT_BRACKET by literalToken("(")
+        val RIGHT_BRACKET by literalToken(")")
+        val SLASH by literalToken("\\")
+        val POINT by literalToken(".")
+        val ARROW by literalToken("->")
+        val UNIVERSE by literalToken("U")
+        val IDENTIFIER by regexToken("\\w+")
 
 
-        val universe by univ asJust (CTerm.CUniv)
-        val variable by varName use { CTerm.CVar(text) }
-        val binder by varName or underscore
+        val universe by UNIVERSE asJust (CTerm.CUniv)
+        val variable by IDENTIFIER use { CTerm.CVar(text) }
+        val binder by IDENTIFIER or UNDERSCORE
 
-        val atom by universe or variable or (-lPar * parser { term } * -rPar)
-        val spine by leftAssociative(atom, optional(ws)) { a, _, b -> CTerm.CApp(a, b) }
-        val lambda by -slash * oneOrMore(binder) * -point * parser { term } map { (binders, body) ->
+        val atom by universe or variable or (-LEFT_BRACKET * parser { term } * -RIGHT_BRACKET)
+        val spine by leftAssociative(atom, optional(WHITESPACE)) { a, _, b -> CTerm.CApp(a, b) }
+        val lambda by -SLASH * oneOrMore(binder) * -POINT * parser { term } map { (binders, body) ->
             binders.foldRight(body) { binder, acc ->
                 CTerm.CLam(binder.text, acc)
             }
         }
 
-        // (a b c d ... : t) and so on
-        val doms by zeroOrMore(-lPar * oneOrMore(binder) * -colon * parser { term } * -rPar)
+        // (a b c d ... : t) (e f g h ... : u) and so on
+        val doms by zeroOrMore(-LEFT_BRACKET * oneOrMore(binder) * -COLON * parser { term } * -RIGHT_BRACKET)
 
         // TODO: rename this
-        val pi2 by doms * -arrow * parser { term } map { (domBindings, codom) ->
+        val pi2 by doms * -ARROW * parser { term } map { (domBindings, codom) ->
             domBindings.foldRight(codom) { (binders, dom), acc ->
                 binders.foldRight(acc) { name, ac -> CTerm.CPi(name.text, dom, ac) }
             }
         }
 
-        val funOrSpine by spine * optional(arrow) bind { (sp, arr) ->
+        val funOrSpine by spine * optional(ARROW) bind { (sp, arr) ->
             if (arr == null) pure(sp) else term map { CTerm.CPi("_", sp, it) }
         }
 
         val term: Parser<CTerm> by lambda or pi2 or funOrSpine
 
-        val decl by varName * -colon * term * -equalSign * term use {
-            //println(CDecl(t1.text, t2, t3))
+        val decl by IDENTIFIER * -COLON * term * -EQUAL_SIGN * term use {
             CDecl(t1.text, t2, t3)
         }
 
         // removes trailing line separators
-        val decls by -optional(lineSeparator) * separatedTerms(decl, lineSeparator) * -optional(lineSeparator)
+        val decls by -optional(LINE_SEPARATOR) * separatedTerms(decl, LINE_SEPARATOR) * -optional(LINE_SEPARATOR)
 
 
         override val rootParser: Parser<Program> by decls
