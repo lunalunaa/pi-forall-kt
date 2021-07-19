@@ -24,6 +24,14 @@ sealed class CTerm {
     object CUniv : CTerm() {
         override fun toString(): String = "U"
     }
+
+    fun pretty(): String = when (this) {
+        is CApp -> toString()
+        is CLam -> toString()
+        is CPi -> if (binder == "_") "${dom.pretty()} -> ${codom.pretty()}" else "($binder: ${dom.pretty()}) -> ${codom.pretty()}"
+        is CUniv -> "U"
+        is CVar -> toString()
+    }
 }
 
 data class CDecl(val name: Name, val sig: CType, val def: CTerm) {

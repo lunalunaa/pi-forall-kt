@@ -6,19 +6,20 @@ sealed class TypeCheckError : Exception() {
 
     abstract fun report(): String
 
-    data class TypeMismatch(val expected: VType, val inferred: VType, val concrete: CTerm) : TypeCheckError() {
-        override fun report(): String = "Expected: $expected\n\nInferred: $inferred\nWhen checking: $concrete"
+    data class TypeMismatchError(val expected: VType, val inferred: VType, val concrete: CTerm) : TypeCheckError() {
+        override fun report(): String =
+            "Expected: $expected\n\nInferred: $inferred\nWhen checking: ${concrete.pretty()}"
     }
 
-    data class VarOutOfScope(val v: CTerm.CVar) : TypeCheckError() {
-        override fun report(): String = "Variable $v out of scope"
+    data class VarOutOfScopeError(val v: CTerm.CVar) : TypeCheckError() {
+        override fun report(): String = "Variable ${v.pretty()} out of scope"
     }
 
-    data class ExpectedFunType(val inferred: VType) : TypeCheckError() {
+    data class ExpectedFunTypeError(val inferred: VType) : TypeCheckError() {
         override fun report(): String = "Expected function type, but inferred $inferred"
     }
 
-    object CannotInferLambda : TypeCheckError() {
-        override fun report(): String = "Cannot infer lambda"
+    data class CannotInferLambdaError(val concrete: CTerm) : TypeCheckError() {
+        override fun report(): String = "Cannot infer lambda ${concrete.pretty()}"
     }
 }

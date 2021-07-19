@@ -22,6 +22,9 @@ sealed class Term {
         override fun toString(): String = "U"
     }
 
+    /**
+     * If [varList] does not contain the required element then it throws [IndexOutOfBoundsException]
+     */
     @Throws(IndexOutOfBoundsException::class)
     private fun pretty(lvl: Lvl, varList: List<Name>): String = when (this) {
         is App -> "(${t1.pretty(lvl, varList)} ${t2.pretty(lvl, varList)})"
@@ -39,7 +42,9 @@ sealed class Term {
         is Var -> varList[idx]
     }
 
-    // this might throw this exception
+    /**
+     * It must be called on well-formed terms otherwise it throws [IndexOutOfBoundsException]
+     */
     @Throws(IndexOutOfBoundsException::class)
     fun pretty(): String = pretty(0, emptyList())
 }

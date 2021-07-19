@@ -57,7 +57,7 @@ class Elaborator(
             Term.Lam(ct.binder, tm)
         } else {
             val (tm, inferred) = inferTy(ct)
-            if (checkConv(context.lvl, expected, inferred)) tm else throw TypeMismatch(expected, inferred, ct)
+            if (checkConv(context.lvl, expected, inferred)) tm else throw TypeMismatchError(expected, inferred, ct)
         }
     }
 
@@ -71,7 +71,7 @@ class Elaborator(
             is CTerm.CVar -> context.types.run {
                 val idx = indexOfFirst { (name, _) -> name == ct.name }
                 return if (idx != -1) Pair(Term.Var(idx), get(idx).second) else {
-                    throw VarOutOfScope(ct)
+                    throw VarOutOfScopeError(ct)
                 }
             }
             is CTerm.CApp -> {
@@ -80,10 +80,10 @@ class Elaborator(
                     val tm2 = checkTy(ct.tm2, inferred.dom.value)
                     Pair(Term.App(tm1, tm2), inferred.codom.applyTo(lazy { Normalizer(context.env).eval(tm2) }))
                 } else {
-                    throw ExpectedFunType(inferred)
+                    throw ExpectedFunTypeError(inferred)
                 }
             }
-            is CTerm.CLam -> throw CannotInferLambda
+            is CTerm.CLam -> throw CannotInferLambdaError(ct)
 
             // I think Pi can be either synthesized or checked
             is CTerm.CPi -> {
@@ -98,8 +98,4 @@ class Elaborator(
             is CTerm.CUniv -> Pair(Term.Univ, Value.VUniv)
         }
     }
-}
-
-fun main() {
-
 }

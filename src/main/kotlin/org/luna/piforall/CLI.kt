@@ -4,6 +4,7 @@ import org.luna.piforall.core.CTerm
 import org.luna.piforall.core.Normalizer
 import org.luna.piforall.core.Program
 import org.luna.piforall.core.TypeChecker
+import org.luna.piforall.parse.Parser
 import java.io.FileNotFoundException
 import java.nio.file.Files
 import java.nio.file.Paths
