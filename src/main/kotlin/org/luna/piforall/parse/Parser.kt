@@ -14,11 +14,10 @@ import org.luna.piforall.core.CTerm
 import org.luna.piforall.core.Program
 
 
-// TODO: move this to other places
 
 object Parser {
 
-    // TODO: update this
+
     private val termParser = object : Grammar<CTerm>() {
 
         // TODO: make it ignore keyword
@@ -53,7 +52,7 @@ object Parser {
         // (a b c d ... : t) (e f g h ... : u) and so on
         val domsP by zeroOrMore(-LEFT_BRACKET * oneOrMore(binderP) * -COLON * parser { termP } * -RIGHT_BRACKET)
 
-        // TODO: rename this
+
         val piP by domsP * -ARROW * parser { termP } map { (domBindings, codom) ->
             domBindings.foldRight(codom) { (binders, dom), acc ->
                 binders.foldRight(acc) { name, ac -> CTerm.CPi(name.text, dom, ac) }
