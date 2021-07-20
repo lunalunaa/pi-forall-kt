@@ -58,7 +58,7 @@ sealed class Value {
     data class VApp(val v1: Value, val v2: Lazy<Value>) : Value()
     data class VPi(val binder: Name, val dom: Lazy<VType>, val codom: Closure) : Value()
     object VUniv : Value() {
-        override fun toString(): String = "VUniv"
+        override fun toString(): String = "U"
     }
 
     // to substitute something (say, k-th free var) in the closure (environment), just substitute in the top-most env
