@@ -1,28 +1,27 @@
 ## Introduction
+This project was started as a Kotlin implementation of **pi-forall**, a dependently typed language developed by
+Stephanie Weirich for teaching purposes, first appeared at OPLSS 2014. However, more features (and many differences) are
+to be expected in this implementation. So this project would eventually grow out of the original one.
 
-This is a Kotlin implementation of pi-forall, a dependently typed language developed by Stephanie Weirich for teaching
-purposes, first appeared at OPLSS 2014. However, more features (and many differences) are to be expected in this
-implementation.
-
-The purpose of this project is for me to familiarize some of the internals of dependently typed programming languages.
+The purpose of this project is for me to familiarize some of the implementation details of common features found in
+dependently typed programming languages.
 
 ## Roadmap (subject to rapid change)
 
 - [ ] Basic bidirectional elaborator for MLTT with one universe
-    - [x] Terms
-    - [x] Top-level definitions
-    - [ ] Propositional equality
-    - [ ] Pattern matching
-- [ ] Basic inductive data types
+  - [x] Terms
+  - [x] Top-level definitions
+  - [ ] Propositional equality
+- [ ] Basic inductive data types and pattern matching
 - [ ] Universe levels
-    - [ ] universe polymorphism
+  - [ ] universe polymorphism
 - [ ] implicit arguments
 - [ ] metavariables(holes)
 - [ ] termination checking
 
 ## Reading List
 
-These are the papers that I found relevant in implementing a modern dependently-typed programming languages.
+These are the papers that I found relevant to implementing a dependently typed PL.
 
 - Coquand, T., Kinoshita, Y., Nordström, B., & Takeyama, M. (2009). A simple type-theoretic language: Mini-TT. From
   Semantics to Computer Science; Essays in Honour of Gilles Kahn,
