@@ -26,9 +26,7 @@ data class Context(
         Context(env.prepend(v.value), types.prepend(name to ty.value), (lvl + 1))
 
     companion object {
-        fun emptyContext(): Context {
-            return Context(emptyList(), emptyList(), 0)
-        }
+        fun emptyContext(): Context = Context(emptyList(), emptyList(), 0)
     }
 }
 
