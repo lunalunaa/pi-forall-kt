@@ -1,7 +1,9 @@
 ## Introduction
-This project was started as a Kotlin implementation of **pi-forall**, a dependently typed language developed by
-Stephanie Weirich for teaching purposes, first appeared at OPLSS 2014. However, more features (and many differences) are
-to be expected in this implementation. So this project would eventually grow out of the original one.
+This project was started as a Kotlin implementation of [**pi-forall**](https://github.com/sweirich/pi-forall), a
+dependently typed language developed by Stephanie Weirich for teaching purposes, first appeared
+at [OPLSS 2014](https://www.cs.uoregon.edu/research/summerschool/summer14/curriculum.html). However, more features (and
+many differences) are to be expected in this implementation. So this project would eventually grow out of the original
+one.
 
 The purpose of this project is for me to familiarize some of the implementation details of common features found in
 dependently typed programming languages.
