@@ -22,7 +22,7 @@ fun checkConv(lvl: Lvl, v1: Value, v2: Value): Boolean {
         return v2 is Value.VVar && v1.lvl == v2.lvl
     } else if (v1 is Value.VApp) {
         return v2 is Value.VApp && checkConv(lvl, v1.v1, v2.v1)
-                && checkConv(lvl + 1, v1.v2.value, v2.v2.value)
+                && checkConv(lvl, v1.v2.value, v2.v2.value)
     } else {
         return false
     }
