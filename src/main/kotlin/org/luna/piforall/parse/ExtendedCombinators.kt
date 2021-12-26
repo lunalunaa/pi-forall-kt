@@ -14,14 +14,14 @@ import com.github.h0tk3y.betterParse.parser.Parser
  * Returns the [ErrorResult] of the `innerParser` otherwise.
  */
 class BindCombinator<T, R>(
-    private val innerParser: Parser<T>,
-    val transform: (T) -> Parser<R>
+  private val innerParser: Parser<T>,
+  val transform: (T) -> Parser<R>,
 ) : Parser<R> {
-    override fun tryParse(tokens: TokenMatchesSequence, fromPosition: Int): ParseResult<R> =
-        when (val innerResult = innerParser.tryParse(tokens, fromPosition)) {
-            is ErrorResult -> innerResult
-            is Parsed -> transform(innerResult.value).tryParse(tokens, innerResult.nextPosition)
-        }
+  override fun tryParse(tokens: TokenMatchesSequence, fromPosition: Int): ParseResult<R> =
+    when (val innerResult = innerParser.tryParse(tokens, fromPosition)) {
+      is ErrorResult -> innerResult
+      is Parsed -> transform(innerResult.value).tryParse(tokens, innerResult.nextPosition)
+    }
 }
 
 /** Applies the [transform] function to the successful results of the receiver parser. See [MapCombinator]. */
@@ -32,12 +32,12 @@ infix fun <A, T> Parser<A>.useBind(transform: A.() -> Parser<T>): Parser<T> = Bi
 
 /** Returns [Parsed] of [pureValue] without consuming any input */
 class PureCombinator<T>(private val pureValue: T) : Parser<T> {
-    override fun tryParse(tokens: TokenMatchesSequence, fromPosition: Int): ParseResult<T> = object : Parsed<T>() {
-        override val nextPosition: Int
-            get() = fromPosition
-        override val value: T
-            get() = pureValue
-    }
+  override fun tryParse(tokens: TokenMatchesSequence, fromPosition: Int): ParseResult<T> = object : Parsed<T>() {
+    override val nextPosition: Int
+      get() = fromPosition
+    override val value: T
+      get() = pureValue
+  }
 }
 
 /** Returns [Parsed] of [value] without consuming any input */
