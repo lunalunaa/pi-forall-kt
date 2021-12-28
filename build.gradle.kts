@@ -18,7 +18,6 @@ dependencies {
   implementation("com.github.h0tk3y.betterParse:better-parse:0.4.3")
   testImplementation(kotlin("test"))
   implementation(group = "org.jline", name = "jline", version = "3.1.3")
-
 }
 
 tasks.test {
@@ -30,5 +29,5 @@ tasks.withType<KotlinCompile> {
 }
 
 application {
-  mainClassName = "CLIKt"
+  mainClass.set("org.luna.piforall.CLI")
 }
